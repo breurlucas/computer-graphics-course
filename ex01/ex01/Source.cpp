@@ -3,25 +3,29 @@
 #include <GLFW\glfw3.h>
 #include <string.h>
 #include <iostream>
-#include <time.h>
 #include <chrono>
 
 // By using the OpenGL types (like GLint) GLEW ensures we are using the most optimized implementations (memory allocation, for instance)
 const GLint WIDTH = 800, HEIGHT = 600;
 GLuint VAO, VBO, pShader; // Unsigned integer
 
+bool direction = true; // True: translate right; False: translate left
+float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.01f; // Increment is related to local FPS if not limited
+
 // Vertex shader. Version 3.3.0 of GLSL (OpenGL Shading Language)
-static const char *vShader = "                 \n\
-#version 330                                   \n\
-                                               \n\
-layout(location=0) in vec2 pos;                \n\
-                                               \n\
-void main(){                                   \n\
- gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);   \n\
-}                                              \n";
+static const char *vShader = "                               \n\
+#version 330                                                 \n\
+                                                             \n\
+layout(location=0) in vec3 pos;                              \n\
+                                                             \n\
+uniform float xTranslate;                                    \n\
+                                                             \n\
+void main(){                                                 \n\
+ gl_Position = vec4(pos.x + xTranslate, pos.y, pos.z, 1.0);  \n\
+}                                                            \n";
 
 // Fragment shader
-// *uniform*, dynamically assigned parameters
+// *uniform*, dynamically assigned parameters (connection)
 static const char *fShader = "                 \n\
 #version 330                                   \n\
                                                \n\
@@ -33,12 +37,12 @@ void main(){                                   \n\
  color = vec4(triangleColor, 1.0);             \n\
 }                                              \n";
 
-// Function for creating a triangle (VAO and VBO)
+// Function for creating a triangle (VAO and VBO)  
 void CreateTriangle() {
 	GLfloat vertex[] = {   
-		-1.0f, -1.0f, // Vertex 1 (x, y)
-		 1.0f, -1.0f, // Vertex 2 (x, y)
-		 0.0f,  1.0f, // Vertex 3 (x, y)
+		-1.0f, -1.0f, 0.0f, // Vertex 1 (x, y, z)
+		 1.0f, -1.0f, 0.0f, // Vertex 2 (x, y, z)
+		 0.0f,  1.0f, 0.0f  // Vertex 3 (x, y, z)
 	};
 
 	// VAO (Vertex Array Object), stored in RAM. Coordinates VBO buffering.
@@ -49,19 +53,19 @@ void CreateTriangle() {
 		glGenBuffers(1, &VBO); // Generates a VBO ID
 		glBindBuffer(GL_ARRAY_BUFFER, VBO); // Binds ID to VBO. VBO is automatically linked to its VAO
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW); // Assigning the vertex values to the VBO
-			// GL_STATIC_DRAW: used for fixed vertex (slower memory allocation)
-			// GL_DYNAMIC_DRAW: used for dynamic vertex (faster memory allocation)
+			// GL_STATIC_DRAW: used for fixed vertex (allocation of slower GPU memory)
+			// GL_DYNAMIC_DRAW: used for dynamic vertex (allocation of faster GPU memory)
 			// GL_STREAM_DRAW: vertex shows up a single frame
 			
 			// Attribute Pointer
 			/* Args: (shader location, number of vertex in the primitive, type, is it all in one line? (normalized), do I need to skip something?, 
 			offset from the start?) */
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 			glEnableVertexAttribArray(0); // Arg: (shader location)
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0); // Remove unnecessary VBO data from memory for the next object to be processed
+		glBindBuffer(GL_ARRAY_BUFFER, 0); // Reset VBO pointer for the next object to be processed
 	   
-	glBindVertexArray(0); // Remove unnecessary VAO data from memory for the next object to be processed
+	glBindVertexArray(0); // Reset VAO pointer for the next object to be processed
 }
 
 // Function to create shaders
@@ -91,7 +95,7 @@ void CreateShader(GLenum shaderType, const char *shaderCode) {
 	glAttachShader(pShader, shader);
 }
 
-// Function to compile the shader program (pShader -> GLuint ID)
+// Function to create the program (pShader: GLuint ID) and compile & attach the shaders to it
 void CompileShader() {
 	pShader = glCreateProgram();
 	if (!pShader) { 
@@ -99,8 +103,8 @@ void CompileShader() {
 		return;
 	}
 
-	CreateShader(GL_VERTEX_SHADER, vShader); // Create Vertex Shader
-	CreateShader(GL_FRAGMENT_SHADER, fShader); // Create Fragment Shader 
+	CreateShader(GL_VERTEX_SHADER, vShader); // Create Vertex Shader and attach it to the program
+	CreateShader(GL_FRAGMENT_SHADER, fShader); // Create Fragment Shader and attach it to the program
 
 	// Link the program
 	glLinkProgram(pShader);
@@ -128,8 +132,9 @@ void CompileShader() {
 
 int main() {
 
-	// ******** Guarantee compatibility ********
-
+	/********************************
+	*	Guarantee Compatibility
+	*********************************/
 	// Initialize the GLFW API
 	if (!glfwInit()) {
 		printf("GLFW was not initialized");
@@ -149,8 +154,9 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	
-	// ******** Create window ********
-
+	/********************************
+	*	Create Window
+	*********************************/
 	GLFWwindow *mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "New Window", NULL, NULL);
 	// Check if the window was created correctly
 	if (!mainWindow) {
@@ -159,7 +165,7 @@ int main() {
 		return 1;
 	}
 
-	// Get the framebuffer size needed (in pixels) for the Window (height x width) and stores in memory
+	// Get the framebuffer size needed (in pixels) for the Window (height x width) and stores in GPU memory
 	int bufferWidth, bufferHeight;
 	glfwGetFramebufferSize(mainWindow, &bufferWidth, &bufferHeight);
 
@@ -170,6 +176,7 @@ int main() {
 	glewExperimental = GL_TRUE;
 
 	// From this point on GLEW will automatically check for the best implementations available
+	// We initialize GLEW on this line because the preceding code does not implement OpenGL
 	if (glewInit() != GLEW_OK) {
 		printf("GLEW did not initialize");
 		glfwDestroyWindow(mainWindow);
@@ -190,14 +197,21 @@ int main() {
 	while (!glfwWindowShouldClose(mainWindow)) {
 		// Activate inputs and events (mouse and keyboard input, for instance)
 		glfwPollEvents();
+
+		/********************************
+		*	Background Color
+		*********************************/
 		// Clear window and select a new color
 		glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
 		// Load the selected color in the GPU memory buffer
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		/********************************
+		*	Triangle
+		*********************************/
 		// Draw the created triangle
 		glUseProgram(pShader); // Use the program which we put in the GPU memory
-			glBindVertexArray(VAO); // Puts links into RAM for easy access
+			glBindVertexArray(VAO); // Binds ID to VAO
 
 			auto t_now = std::chrono::high_resolution_clock::now();
 			float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
@@ -208,10 +222,29 @@ int main() {
 				float g = 0.0f;
 				float b = 0.0f;
 				glUniform3f(uniColor, r, g, b); // Assigns the color read above
-				glDrawArrays(GL_TRIANGLES, 0, 3); // Args: (primitive vertex, first location position, number of coordinates/vertex)
-			glBindVertexArray(0); // Remove unnecessary VAO data from memory for the next object to be processed
-		glUseProgram(0); // Remove the program from memory
 
+				/********************************
+				*	Translate
+				*********************************/
+				// Movement rule
+				if (direction)
+					triOffset += triIncrement; // Translate right
+				else
+					triOffset -= triIncrement; // Translate left
+
+				if (abs(triOffset) >= triOffsetMax) // If predetermined max offset was reached, change direction
+					direction = !direction;
+				
+				GLint uniXTranslate = glGetUniformLocation(pShader, "xTranslate"); // Searches for the 'xTranslate' variable in the pShader program
+				glUniform1f(uniXTranslate, triOffset); // Assigns the new calculated offset
+
+				glDrawArrays(GL_TRIANGLES, 0, 3); // Args: (primitive vertex, first location position, number of coordinates/vertex)
+			glBindVertexArray(0); // Reset VAO pointer for the next object to be processed
+		glUseProgram(0); // Reset program pointer for the next program to be executed
+
+		/********************************
+		*	Update Screen
+		*********************************/
 		// Swap buffer -> Executes the instructions queued in the memory buffer
 		glfwSwapBuffers(mainWindow);
 	}
