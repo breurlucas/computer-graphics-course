@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <vector>
 
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
@@ -8,15 +9,14 @@
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtc\type_ptr.hpp>
 
-#include <iostream>
-#include <chrono>
-
-// Fully commented code before cleanup
+#include "Mesh.h"
 
 // By using the OpenGL types (like GLint) GLEW ensures we are using the most optimized implementations (memory allocation, for instance)
 const GLint WIDTH = 800, HEIGHT = 600;
 //const float toRad = 3.141592f / 180.0f; // Save the degree to radian conversion constant
-GLuint VAO, VBO, IBO, pShader; // Unsigned integer
+GLuint pShader; // Unsigned integer
+
+std::vector<Mesh *> meshList;
 
 bool direction = true, sizeDirection = true, angleDirection = true; // True: translate right; False: translate left
 float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.005f; // Increment is related to local FPS if not limited
@@ -57,7 +57,7 @@ void main(){                                   \n\
 
 // Function for creating a triangle (VAO and VBO)  
 void CreateTriangle() {
-	GLfloat vertex[] = {
+	GLfloat vertices[] = {
 		 0.0f,  1.0f, 0.0f, // Vertex 0 (x, y, z)
 		 1.0f, -1.0f, 0.0f, // Vertex 1 (x, y, z)
 		-1.0f, -1.0f, 0.0f, // Vertex 2 (x, y, z)
@@ -71,36 +71,9 @@ void CreateTriangle() {
 		1, 2, 3  // Pyramid base
 	};
 
-	// VAO (Vertex Array Object), stored in RAM. Coordinates VBO buffering.
-	glGenVertexArrays(1, &VAO); // Generates a VAO ID
-	glBindVertexArray(VAO); // Binds ID to VAO
-
-		// Loads index data into GPU memory
-		// IBO (Index Buffer Object), stored in GPU memory
-		glGenBuffers(1, &IBO); // Generates an IBO ID
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO); // Binds ID to IBO. IBO is automatically linked to its VAO
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // Assigning the index values to the IBO
-
-			// Loads vertex data into GPU memory
-			// VBO (Vertex Buffer Object), stored in GPU memory
-			glGenBuffers(1, &VBO); // Generates a VBO ID
-			glBindBuffer(GL_ARRAY_BUFFER, VBO); // Binds ID to VBO. VBO is automatically linked to its VAO
-			glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW); // Assigning the vertex values to the VBO
-					// GL_STATIC_DRAW: used for fixed vertex (allocation of slower GPU memory)
-					// GL_DYNAMIC_DRAW: used for dynamic vertex (allocation of faster GPU memory)
-					// GL_STREAM_DRAW: vertex shows up a single frame
-
-				// Attribute Pointer
-				/* Args: (shader location, number of vertex in the primitive, type, is it all in one line? (normalized), do I need to skip something?,
-				offset from the start?) */
-				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-				glEnableVertexAttribArray(0); // Arg: (shader location)
-
-			glBindBuffer(GL_ARRAY_BUFFER, 0); // Reset VBO pointer for the next object to be processed
-		
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Reset IBO pointer for the next object to be processed
-
-	glBindVertexArray(0); // Reset VAO pointer for the next object to be processed
+	Mesh *obj1 = new Mesh();
+	obj1->CreateMesh(vertices, indices, sizeof(vertices), sizeof(indices));
+	meshList.push_back(obj1);
 }
 
 // Function to create shaders
@@ -229,12 +202,11 @@ int main() {
 	CreateTriangle(); // Set the data in the GPU memory
 	CompileShader();
 
-	auto t_start = std::chrono::high_resolution_clock::now();
-
 	// Run till window gets closed
 	while (!glfwWindowShouldClose(mainWindow)) {
 		// Activate inputs and events (mouse and keyboard input, for instance)
 		glfwPollEvents();
+
 
 		/********************************
 		*	Background Color
@@ -244,21 +216,12 @@ int main() {
 		// Load the selected color in the GPU memory buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // With the pipe operator both parameters are passed
 
+
 		/********************************
-		*	Triangle
+		*	Pyramid
 		*********************************/
 		glUseProgram(pShader); // Use the program which we put in the GPU memory
-		glBindVertexArray(VAO); // Binds ID to VAO
 
-		auto t_now = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
-
-		// GPU memory works with *int*
-		GLint uniColor = glGetUniformLocation(pShader, "triangleColor"); // Searches for the 'triangleColor' variable in the pShader program
-		float r = (sin(time * 4.0f) + 1.0f) / 2.0f;
-		float g = 0.0f;
-		float b = 0.0f;
-		glUniform3f(uniColor, r, g, b); // Assigns the color read above
 
 		/********************************
 		*	Translate, Scale and Rotate
@@ -317,22 +280,11 @@ int main() {
 		// Args: (projection, number of projections, should be transposed?, projection values)
 		glUniformMatrix4fv(uniProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
-		// Old way: calculating offset per axis, without using the matrix model
-		//glUniform1f(uniXTranslate, triOffset); // Assigns the new calculated offset
-
 		/********************************
-		*	Draw Pyramid
+		*	Render
 		*********************************/
-		/* The binding below is used to guarantee that old GPUs with no default index support do receive the indices. 
-		The index implementation is recent and only supported in the 20 and 30 series of NVIDIA GPUs */
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO); // Binds ID to IBO.
-			// Args: (primitive, index count (points to be connected), index type, end)
-			glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Reset IBO pointer for the next object to be processed
+		meshList[0]->RenderMesh();
 
-
-		//glDrawArrays(GL_TRIANGLES, 0, 3); // Args: (primitive vertex, first location position, number of coordinates/vertex)
-		glBindVertexArray(0); // Reset VAO pointer for the next object to be processed
 		glUseProgram(0); // Reset program pointer for the next program to be executed
 
 		/********************************
