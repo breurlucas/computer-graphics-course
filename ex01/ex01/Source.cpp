@@ -58,6 +58,33 @@ void CreateTriangle() {
 	glBindVertexArray(0); // Remove unnecessary VAO data from memory for the next object to be processed
 }
 
+// Function to create shaders
+void CreateShader(GLenum shaderType, const char *shaderCode) {
+	GLuint shader = glCreateShader(shaderType);
+	const GLchar* code[1]; // Converting (char *) to an array of (GLchar *)
+	code[0] = shaderCode; // Position 0 in the code array receives the shader code string
+	GLint codeLength[1]; // Array of GLint
+	codeLength[0] = strlen(shaderCode);
+	// Args: (created shader, size of the array of codes, array of codes, array of 'code lengths') 
+	// Here we only have one code, but we could have multiple
+	glShaderSource(shader, 1, code, codeLength);
+
+	// Compile the shader
+	glCompileShader(shader);
+	// Check if the compilation went OK
+	GLint returnCode = 0;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &returnCode); // Returns the compilation status to our returnCode variable
+	if (!returnCode) {
+		GLchar log[1024] = {0}; // 1024 is the standard max log size. Set to empty string
+		glGetProgramInfoLog(shader, sizeof(log), NULL, log); // Get error log
+		printf("Compile error on the %d shader '%s'\n", shaderType, log);
+		return;
+	}
+
+	// Attach the executable (shader) to the program (pShader)
+	glAttachShader(pShader, shader);
+}
+
 // Function to compile the shader program (pShader -> GLuint ID)
 void CompileShader() {
 	pShader = glCreateProgram();
@@ -66,36 +93,10 @@ void CompileShader() {
 		return;
 	}
 
-	// ******** VERTEX SHADER ********
-	GLuint shader = glCreateShader(GL_VERTEX_SHADER);
-	const GLchar* code[1]; // Converting (char *) to an array of (GLchar *)
-	code[0] = vShader; // Position 0 in the code array receives the vShader string
+	CreateShader(GL_VERTEX_SHADER, vShader); // Create Vertex Shader
+	CreateShader(GL_FRAGMENT_SHADER, fShader); // Create Fragment Shader 
 
-	GLint codeLength[1]; // Array of GLint
-	codeLength[0] = strlen(vShader);
-
-	// Args: (created shader, size of the array of codes, array of codes, array of 'code lengths') 
-	// Here we only have one code, but we could have multiple
-	glShaderSource(shader, 1, code, codeLength);
-	// Compile the shader
-	glCompileShader(shader);
-	// Attach the executable (shader) to the program (pShader)
-	glAttachShader(pShader, shader);
-
-	// ******** FRAGMENT SHADER ********
-	shader = glCreateShader(GL_FRAGMENT_SHADER);
-	code[0] = fShader; // Position 0 in the code array receives the vShader string
-	codeLength[0] = strlen(fShader);
-
-	// Args: (created shader, size of the array of codes, array of codes, array of 'code lengths') 
-	// Here we only have one code, but we could have multiple
-	glShaderSource(shader, 1, code, codeLength);
-	// Compile the shader
-	glCompileShader(shader);
-	// Attach the executable (shader) to the program (pShader)
-	glAttachShader(pShader, shader);
-	// Link the program to memory
-	glLinkProgram(pShader);
+	glLinkProgram(pShader); // Link the program
 }
 
 int main() {
