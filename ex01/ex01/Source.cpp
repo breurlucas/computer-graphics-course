@@ -77,7 +77,7 @@ void CreateShader(GLenum shaderType, const char *shaderCode) {
 	if (!returnCode) {
 		GLchar log[1024] = {0}; // 1024 is the standard max log size. Set to empty string
 		glGetProgramInfoLog(shader, sizeof(log), NULL, log); // Get error log
-		printf("Compile error on the %d shader '%s'\n", shaderType, log);
+		printf("%d shader compile error: '%s'\n", shaderType, log);
 		return;
 	}
 
@@ -96,7 +96,17 @@ void CompileShader() {
 	CreateShader(GL_VERTEX_SHADER, vShader); // Create Vertex Shader
 	CreateShader(GL_FRAGMENT_SHADER, fShader); // Create Fragment Shader 
 
-	glLinkProgram(pShader); // Link the program
+	// Link the program
+	glLinkProgram(pShader);
+	// Check if the link went OK
+	GLint returnCode = 0;
+	glGetShaderiv(pShader, GL_LINK_STATUS, &returnCode); // Returns the compilation status to our returnCode variable
+	if (!returnCode) {
+		GLchar log[1024] = { 0 }; // 1024 is the standard max log size. Set to empty string
+		glGetProgramInfoLog(pShader, sizeof(log), NULL, log); // Get error log
+		printf("Program linking error: '%s'\n", log);
+		return;
+	}
 }
 
 int main() {
