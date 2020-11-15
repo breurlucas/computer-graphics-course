@@ -11,10 +11,10 @@ GLuint VAO, VBO, pShader; // Unsigned integer
 static const char *vShader = "                 \n\
 #version 330                                   \n\
                                                \n\
-layout(location=0) in vec3 pos;                \n\
+layout(location=0) in vec2 pos;                \n\
                                                \n\
 void main(){                                   \n\
- gl_Position = vec4(pos.x, pos.y, pos.z, 1.0); \n\
+ gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);   \n\
 }                                              \n";
 
 // Fragment shader
@@ -29,36 +29,39 @@ void main(){                                   \n\
 
 // Function for creating a triangle (VAO and VBO)
 void CreateTriangle() {
-	GLfloat vertex[] = {
-		//X		 Y     Z
-		-1.0f, -1.0f, 0.0f,
-		 1.0f, -1.0f, 0.0f,
-		 0.0f,  1.0f, 0.0f
+	GLfloat vertex[] = {   
+		-1.0f, -1.0f, // Vertex 1 (x, y)
+		 1.0f, -1.0f, // Vertex 2 (x, y)
+		 0.0f,  1.0f, // Vertex 3 (x, y)
 	};
 
-	// VAO
+	// VAO (Vertex Array Object), stored in RAM. Coordinates VBO buffering.
 	glGenVertexArrays(1, &VAO); // Generates a VAO ID
 	glBindVertexArray(VAO); // Binds ID to VAO
-
-		// VBO
+		// Loads vertex data into GPU memory
+		// VBO (Vertex Buffer Object), stored in GPU memory
 		glGenBuffers(1, &VBO); // Generates a VBO ID
 		glBindBuffer(GL_ARRAY_BUFFER, VBO); // Binds ID to VBO. VBO is automatically linked to its VAO
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW); // Assigning the vertex values to the VBO
+			// GL_STATIC_DRAW: used for fixed vertex (slower memory allocation)
+			// GL_DYNAMIC_DRAW: used for dynamic vertex (faster memory allocation)
+			// GL_STREAM_DRAW: vertex shows up a single frame
 			
 			// Attribute Pointer
-			// Args: (shader location, number of vertex in the primitive, type, is it all in one line?, do I need to skip something?, offset from the start?)
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			/* Args: (shader location, number of vertex in the primitive, type, is it all in one line? (normalized), do I need to skip something?, 
+			offset from the start?) */
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 			glEnableVertexAttribArray(0); // Arg: (shader location)
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0); // Remove the VBO from memory
-	
-	glBindVertexArray(0); // Remove the VAO from memory
+		glBindBuffer(GL_ARRAY_BUFFER, 0); // Remove unnecessary VBO data from memory for the next object to be processed
+	   
+	glBindVertexArray(0); // Remove unnecessary VAO data from memory for the next object to be processed
 }
 
 // Function to compile the shader program (pShader -> GLuint ID)
 void CompileShader() {
 	pShader = glCreateProgram();
-	if (!pShader) {
+	if (!pShader) { 
 		printf("Error while creating shader program");
 		return;
 	}
