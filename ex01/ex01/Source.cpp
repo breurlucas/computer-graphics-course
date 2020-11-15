@@ -2,6 +2,9 @@
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
 #include <string.h>
+#include <iostream>
+#include <time.h>
+#include <chrono>
 
 // By using the OpenGL types (like GLint) GLEW ensures we are using the most optimized implementations (memory allocation, for instance)
 const GLint WIDTH = 800, HEIGHT = 600;
@@ -18,13 +21,16 @@ void main(){                                   \n\
 }                                              \n";
 
 // Fragment shader
+// *uniform*, dynamically assigned parameters
 static const char *fShader = "                 \n\
 #version 330                                   \n\
+                                               \n\
+uniform vec3 triangleColor;                    \n\
                                                \n\
 out vec4 color;                                \n\
                                                \n\
 void main(){                                   \n\
- color = vec4(1.0, 1.0, 0.0, 1.0);             \n\
+ color = vec4(triangleColor, 1.0);             \n\
 }                                              \n";
 
 // Function for creating a triangle (VAO and VBO)
@@ -157,7 +163,7 @@ int main() {
 	int bufferWidth, bufferHeight;
 	glfwGetFramebufferSize(mainWindow, &bufferWidth, &bufferHeight);
 
-	// Set the main window
+	// Set/Activate the main window
 	glfwMakeContextCurrent(mainWindow);
 
 	// GLEW EXPERIMENTAL. Allows GLEW to use experimental OpenGL extensions
@@ -175,8 +181,10 @@ int main() {
 	glViewport(0, 0, bufferWidth, bufferHeight); 
 
 	// Create the triangle and compile the shader
-	CreateTriangle();
+	CreateTriangle(); // Set the data in the GPU memory
 	CompileShader();
+
+	auto t_start = std::chrono::high_resolution_clock::now();
 
 	// Run till window gets closed
 	while (!glfwWindowShouldClose(mainWindow)) {
@@ -188,12 +196,21 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Draw the created triangle
-		glUseProgram(pShader);
-			glBindVertexArray(VAO);
-				// Args: (primitive vertex, location, number of coordinates)
-				glDrawArrays(GL_TRIANGLES, 0, 3);
-			glBindVertexArray(0);
-		glUseProgram(0);
+		glUseProgram(pShader); // Use the program which we put in the GPU memory
+			glBindVertexArray(VAO); // Puts links into RAM for easy access
+
+			auto t_now = std::chrono::high_resolution_clock::now();
+			float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
+				
+				// GPU memory works with *int*
+				GLint uniColor = glGetUniformLocation(pShader, "triangleColor"); // Searches for the 'triangleColor' variable in the pShader program
+				float r = (sin(time * 4.0f) + 1.0f) / 2.0f;
+				float g = 0.0f;
+				float b = 0.0f;
+				glUniform3f(uniColor, r, g, b); // Assigns the color read above
+				glDrawArrays(GL_TRIANGLES, 0, 3); // Args: (primitive vertex, first location position, number of coordinates/vertex)
+			glBindVertexArray(0); // Remove unnecessary VAO data from memory for the next object to be processed
+		glUseProgram(0); // Remove the program from memory
 
 		// Swap buffer -> Executes the instructions queued in the memory buffer
 		glfwSwapBuffers(mainWindow);
