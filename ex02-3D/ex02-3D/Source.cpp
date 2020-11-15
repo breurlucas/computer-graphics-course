@@ -14,7 +14,7 @@
 // By using the OpenGL types (like GLint) GLEW ensures we are using the most optimized implementations (memory allocation, for instance)
 const GLint WIDTH = 800, HEIGHT = 600;
 //const float toRad = 3.141592f / 180.0f; // Save the degree to radian conversion constant
-GLuint VAO, VBO, pShader; // Unsigned integer
+GLuint VAO, VBO, IBO, pShader; // Unsigned integer
 
 bool direction = true, sizeDirection = true, angleDirection = true; // True: translate right; False: translate left
 float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.005f; // Increment is related to local FPS if not limited
@@ -55,35 +55,47 @@ void main(){                                   \n\
 // Function for creating a triangle (VAO and VBO)  
 void CreateTriangle() {
 	GLfloat vertex[] = {
-		-1.0f, -1.0f, 0.0f, // Vertex 1 (x, y, z)
-		 1.0f, -1.0f, 0.0f, // Vertex 2 (x, y, z)
-		 0.0f,  1.0f, 0.0f  // Vertex 3 (x, y, z)
+		 0.0f,  1.0f, 0.0f, // Vertex 0 (x, y, z)
+		 1.0f, -1.0f, 0.0f, // Vertex 1 (x, y, z)
+		-1.0f, -1.0f, 0.0f, // Vertex 2 (x, y, z)
+		 0.0f,  0.0f, 1.0f  // Vertex 3 (x, y, z)
 	};
 
-	// Quick reuse of the vertex for color interpolation (-1 equals 0 for the 'rgb' float)
-	// 0 0 0 (black)
-	// 1 0 0 (red)
-	// 0 1 0 (green)
+	unsigned int indices[]{
+		0, 1, 2, // Pyramid front
+		0, 1, 3, // Pyramid right
+		0, 2, 3, // Pyramid left
+		1, 2, 3  // Pyramid base
+	};
 
 	// VAO (Vertex Array Object), stored in RAM. Coordinates VBO buffering.
 	glGenVertexArrays(1, &VAO); // Generates a VAO ID
 	glBindVertexArray(VAO); // Binds ID to VAO
-		// Loads vertex data into GPU memory
-		// VBO (Vertex Buffer Object), stored in GPU memory
-	glGenBuffers(1, &VBO); // Generates a VBO ID
-	glBindBuffer(GL_ARRAY_BUFFER, VBO); // Binds ID to VBO. VBO is automatically linked to its VAO
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW); // Assigning the vertex values to the VBO
-		// GL_STATIC_DRAW: used for fixed vertex (allocation of slower GPU memory)
-		// GL_DYNAMIC_DRAW: used for dynamic vertex (allocation of faster GPU memory)
-		// GL_STREAM_DRAW: vertex shows up a single frame
 
-		// Attribute Pointer
-		/* Args: (shader location, number of vertex in the primitive, type, is it all in one line? (normalized), do I need to skip something?,
-		offset from the start?) */
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0); // Arg: (shader location)
+		// Loads index data into GPU memory
+		// IBO (Index Buffer Object), stored in GPU memory
+		glGenBuffers(1, &IBO); // Generates an IBO ID
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO); // Binds ID to IBO. IBO is automatically linked to its VAO
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // Assigning the index values to the IBO
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0); // Reset VBO pointer for the next object to be processed
+			// Loads vertex data into GPU memory
+			// VBO (Vertex Buffer Object), stored in GPU memory
+			glGenBuffers(1, &VBO); // Generates a VBO ID
+			glBindBuffer(GL_ARRAY_BUFFER, VBO); // Binds ID to VBO. VBO is automatically linked to its VAO
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW); // Assigning the vertex values to the VBO
+					// GL_STATIC_DRAW: used for fixed vertex (allocation of slower GPU memory)
+					// GL_DYNAMIC_DRAW: used for dynamic vertex (allocation of faster GPU memory)
+					// GL_STREAM_DRAW: vertex shows up a single frame
+
+				// Attribute Pointer
+				/* Args: (shader location, number of vertex in the primitive, type, is it all in one line? (normalized), do I need to skip something?,
+				offset from the start?) */
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+				glEnableVertexAttribArray(0); // Arg: (shader location)
+
+			glBindBuffer(GL_ARRAY_BUFFER, 0); // Reset VBO pointer for the next object to be processed
+		
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Reset IBO pointer for the next object to be processed
 
 	glBindVertexArray(0); // Reset VAO pointer for the next object to be processed
 }
@@ -229,7 +241,6 @@ int main() {
 		/********************************
 		*	Triangle
 		*********************************/
-		// Draw the created triangle
 		glUseProgram(pShader); // Use the program which we put in the GPU memory
 		glBindVertexArray(VAO); // Binds ID to VAO
 
@@ -244,7 +255,7 @@ int main() {
 		glUniform3f(uniColor, r, g, b); // Assigns the color read above
 
 		/********************************
-		*	Translate and Scale
+		*	Translate, Scale and Rotate
 		*********************************/
 		// Movement rule
 		if (direction)
@@ -292,7 +303,18 @@ int main() {
 		// Old way: calculating offset per axis, without using the matrix model
 		//glUniform1f(uniXTranslate, triOffset); // Assigns the new calculated offset
 
-		glDrawArrays(GL_TRIANGLES, 0, 3); // Args: (primitive vertex, first location position, number of coordinates/vertex)
+		/********************************
+		*	Draw Pyramid
+		*********************************/
+		/* The binding below is used to guarantee that old GPUs with no default index support do receive the indices. 
+		The index implementation is recent and only supported in the 20 and 30 series of NVIDIA GPUs */
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO); // Binds ID to IBO.
+			// Args: (primitive, index count (points to be connected), index type, end)
+			glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Reset IBO pointer for the next object to be processed
+
+
+		//glDrawArrays(GL_TRIANGLES, 0, 3); // Args: (primitive vertex, first location position, number of coordinates/vertex)
 		glBindVertexArray(0); // Reset VAO pointer for the next object to be processed
 		glUseProgram(0); // Reset program pointer for the next program to be executed
 
