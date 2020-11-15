@@ -19,7 +19,7 @@ GLuint VAO, VBO, IBO, pShader; // Unsigned integer
 bool direction = true, sizeDirection = true, angleDirection = true; // True: translate right; False: translate left
 float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.005f; // Increment is related to local FPS if not limited
 float size = 0.4f, sizeMax = 0.8f, sizeMin = 0.1f, sizeIncrement = 0.005f;
-float angle = 0.0f, angleMax = 360.0, angleMin = 0.0f, angleIncrement = 0.1f;
+float angle = 0.0f, angleMax = 360.0, angleMin = 0.0f, angleIncrement = 0.3f;
 
 // Vertex shader. Version 3.3.0 of GLSL (OpenGL Shading Language)
 // Through the matrix model we can pass x, y and z movement all at once in a single variable
@@ -31,9 +31,10 @@ layout(location=0) in vec3 pos;                              \n\
 out vec4 vColor;                                             \n\
                                                              \n\
 uniform mat4 model;                                          \n\
+uniform mat4 projection;                                     \n\
                                                              \n\
 void main(){                                                 \n\
- gl_Position = model * vec4(pos, 1.0);                       \n\
+ gl_Position = projection * model * vec4(pos, 1.0);          \n\
  vColor = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);                \n\
 }                                                            \n";
 
@@ -58,7 +59,7 @@ void CreateTriangle() {
 		 0.0f,  1.0f, 0.0f, // Vertex 0 (x, y, z)
 		 1.0f, -1.0f, 0.0f, // Vertex 1 (x, y, z)
 		-1.0f, -1.0f, 0.0f, // Vertex 2 (x, y, z)
-		 0.0f,  0.0f, 1.0f  // Vertex 3 (x, y, z)
+		 0.0f, -1.0f, 1.0f  // Vertex 3 (x, y, z)
 	};
 
 	unsigned int indices[]{
@@ -216,6 +217,9 @@ int main() {
 		return 1;
 	}
 
+	// Enable depth testing
+	glEnable(GL_DEPTH_TEST);
+
 	// VIEWPORT configuration, passing framebuffer size in pixels
 	glViewport(0, 0, bufferWidth, bufferHeight);
 
@@ -236,7 +240,7 @@ int main() {
 		// Clear window and select a new color
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		// Load the selected color in the GPU memory buffer
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // With the pipe operator both parameters are passed
 
 		/********************************
 		*	Triangle
@@ -289,16 +293,27 @@ int main() {
 							   // Fill the (4x4) model matrix with 1's
 
 		// Movement: model gets updated by the translate function
-		//model = glm::translate(model, glm::vec3(triOffset, 0.0f, 0.0f)); // glm::vec3 returns the specified vector in the correct format
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.0f)); // glm::vec3 returns the specified vector in the correct format
 
 		// Rotate: model gets updated by the rotation funtion
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f)); // glm::vec3 returns the specified vector in the correct format
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); // glm::vec3 returns the specified vector in the correct format
 
 		// Scale: model gets updated by the scaling function
-		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f)); // glm::vec3 returns the specified vector in the correct format
+		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 0.4f)); // glm::vec3 returns the specified vector in the correct format
 
 		// Args: (shader model, number of matrices, should be transposed?, offset model values)
 		glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model)); // Assigns the new offset model to the shader uniModel
+
+		/********************************
+		*	Projection
+		*********************************/
+		GLint uniProjection = glGetUniformLocation(pShader, "projection"); // Searches for the 'projection' variable in the pShader program
+		// Calculates projection
+		// Args: (real depth, display/window aspect ratio, virtual near clip depth, virtual far clip depth)
+		glm::mat4 projection = glm::perspective(1.0f, (GLfloat)bufferWidth / (GLfloat)bufferHeight, 0.1f, 100.0f);
+		// Updates the projection variable in the shader in order to multiply/transform our vertex matrix
+		// Args: (projection, number of projections, should be transposed?, projection values)
+		glUniformMatrix4fv(uniProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
 		// Old way: calculating offset per axis, without using the matrix model
 		//glUniform1f(uniXTranslate, triOffset); // Assigns the new calculated offset
