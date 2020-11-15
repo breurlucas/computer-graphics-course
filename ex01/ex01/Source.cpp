@@ -1,7 +1,13 @@
 #include <stdio.h>
+#include <string.h>
+
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
-#include <string.h>
+
+#include <glm\glm.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+#include <glm\gtc\type_ptr.hpp>
+
 #include <iostream>
 #include <chrono>
 
@@ -9,19 +15,21 @@
 const GLint WIDTH = 800, HEIGHT = 600;
 GLuint VAO, VBO, pShader; // Unsigned integer
 
-bool direction = true; // True: translate right; False: translate left
+bool direction = true, sizeDirection = true; // True: translate right; False: translate left
 float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.01f; // Increment is related to local FPS if not limited
+float size = 0.4f, sizeMax = 0.8f, sizeMin = 0.1f, sizeIncrement = 0.01f;
 
 // Vertex shader. Version 3.3.0 of GLSL (OpenGL Shading Language)
+// Through the matrix model we can pass x, y and z movement all at once in a single variable
 static const char *vShader = "                               \n\
 #version 330                                                 \n\
                                                              \n\
 layout(location=0) in vec3 pos;                              \n\
                                                              \n\
-uniform float xTranslate;                                    \n\
+uniform mat4 model;                                          \n\
                                                              \n\
 void main(){                                                 \n\
- gl_Position = vec4(pos.x + xTranslate, pos.y, pos.z, 1.0);  \n\
+ gl_Position = model * vec4(pos, 1.0);                       \n\
 }                                                            \n";
 
 // Fragment shader
@@ -224,7 +232,7 @@ int main() {
 				glUniform3f(uniColor, r, g, b); // Assigns the color read above
 
 				/********************************
-				*	Translate
+				*	Translate and Scale
 				*********************************/
 				// Movement rule
 				if (direction)
@@ -234,9 +242,31 @@ int main() {
 
 				if (abs(triOffset) >= triOffsetMax) // If predetermined max offset was reached, change direction
 					direction = !direction;
+
+				// Scaling rule
+				if (sizeDirection)
+					size += sizeIncrement; // Scale up
+				else
+					size -= sizeIncrement; // Scale down
+
+				if (size >= sizeMax || size <= sizeMin) // If predetermined max/min scaling was reached, change scaling direction
+					sizeDirection = !sizeDirection;
 				
-				GLint uniXTranslate = glGetUniformLocation(pShader, "xTranslate"); // Searches for the 'xTranslate' variable in the pShader program
-				glUniform1f(uniXTranslate, triOffset); // Assigns the new calculated offset
+				GLint uniModel = glGetUniformLocation(pShader, "model"); // Searches for the 'model' variable in the pShader program
+				glm::mat4 model(1.0f); // glm::mat4 get the 'mat4' function inside the class 'glm'.
+									   // Fill the (4x4) model matrix with 1's
+
+				// Movement: model gets updated by the translate function
+				model = glm::translate(model, glm::vec3(triOffset, triOffset, 0.0f)); // glm::vec3 returns the specified vector in the correct format
+
+				// Scale: model gets updated by the scaling function
+				model = glm::scale(model, glm::vec3(size, size, 1.0f)); // glm::vec3 returns the specified vector in the correct format
+
+				// Args: (shader model, number of matrices, should be transposed?, offset model values)
+				glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model)); // Assigns the new offset model to the shader uniModel
+
+				// Old way: calculating offset per axis, without using the matrix model
+				//glUniform1f(uniXTranslate, triOffset); // Assigns the new calculated offset
 
 				glDrawArrays(GL_TRIANGLES, 0, 3); // Args: (primitive vertex, first location position, number of coordinates/vertex)
 			glBindVertexArray(0); // Reset VAO pointer for the next object to be processed
