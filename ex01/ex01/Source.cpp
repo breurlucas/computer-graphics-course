@@ -19,7 +19,7 @@ GLuint VAO, VBO, pShader; // Unsigned integer
 bool direction = true, sizeDirection = true, angleDirection = true; // True: translate right; False: translate left
 float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.005f; // Increment is related to local FPS if not limited
 float size = 0.4f, sizeMax = 0.8f, sizeMin = 0.1f, sizeIncrement = 0.005f;
-float angle = 0.0f, angleMax = 360.0, angleMin = 0.0f, angleIncrement = 0.8f;
+float angle = 0.0f, angleMax = 360.0, angleMin = 0.0f, angleIncrement = 0.1f;
 
 // Vertex shader. Version 3.3.0 of GLSL (OpenGL Shading Language)
 // Through the matrix model we can pass x, y and z movement all at once in a single variable
@@ -28,10 +28,13 @@ static const char *vShader = "                               \n\
                                                              \n\
 layout(location=0) in vec3 pos;                              \n\
                                                              \n\
+out vec4 vColor;                                             \n\
+                                                             \n\
 uniform mat4 model;                                          \n\
                                                              \n\
 void main(){                                                 \n\
  gl_Position = model * vec4(pos, 1.0);                       \n\
+ vColor = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);                \n\
 }                                                            \n";
 
 // Fragment shader
@@ -41,10 +44,12 @@ static const char *fShader = "                 \n\
                                                \n\
 uniform vec3 triangleColor;                    \n\
                                                \n\
+in vec4 vColor;                                \n\
+                                               \n\
 out vec4 color;                                \n\
                                                \n\
 void main(){                                   \n\
- color = vec4(triangleColor, 1.0);             \n\
+ color = vColor;                               \n\
 }                                              \n";
 
 // Function for creating a triangle (VAO and VBO)  
@@ -54,6 +59,11 @@ void CreateTriangle() {
 		 1.0f, -1.0f, 0.0f, // Vertex 2 (x, y, z)
 		 0.0f,  1.0f, 0.0f  // Vertex 3 (x, y, z)
 	};
+
+	// Quick reuse of the vertex for color interpolation (-1 equals 0 for the 'rgb' float)
+	// 0 0 0 (black)
+	// 1 0 0 (red)
+	// 0 1 0 (green)
 
 	// VAO (Vertex Array Object), stored in RAM. Coordinates VBO buffering.
 	glGenVertexArrays(1, &VAO); // Generates a VAO ID
@@ -212,7 +222,7 @@ int main() {
 		*	Background Color
 		*********************************/
 		// Clear window and select a new color
-		glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		// Load the selected color in the GPU memory buffer
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -268,13 +278,13 @@ int main() {
 									   // Fill the (4x4) model matrix with 1's
 
 				// Movement: model gets updated by the translate function
-				model = glm::translate(model, glm::vec3(triOffset, 0.0f, 0.0f)); // glm::vec3 returns the specified vector in the correct format
+				//model = glm::translate(model, glm::vec3(triOffset, 0.0f, 0.0f)); // glm::vec3 returns the specified vector in the correct format
 				
 				// Rotate: model gets updated by the rotation funtion
 				model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f)); // glm::vec3 returns the specified vector in the correct format
 
 				// Scale: model gets updated by the scaling function
-				model = glm::scale(model, glm::vec3(size, size, 1.0f)); // glm::vec3 returns the specified vector in the correct format
+				model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f)); // glm::vec3 returns the specified vector in the correct format
 
 				// Args: (shader model, number of matrices, should be transposed?, offset model values)
 				glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model)); // Assigns the new offset model to the shader uniModel
