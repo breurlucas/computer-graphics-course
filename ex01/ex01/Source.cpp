@@ -100,11 +100,22 @@ void CompileShader() {
 	glLinkProgram(pShader);
 	// Check if the link went OK
 	GLint returnCode = 0;
-	glGetShaderiv(pShader, GL_LINK_STATUS, &returnCode); // Returns the compilation status to our returnCode variable
+	glGetProgramiv(pShader, GL_LINK_STATUS, &returnCode); // Returns the linking status to our returnCode variable
 	if (!returnCode) {
 		GLchar log[1024] = { 0 }; // 1024 is the standard max log size. Set to empty string
 		glGetProgramInfoLog(pShader, sizeof(log), NULL, log); // Get error log
 		printf("Program linking error: '%s'\n", log);
+		return;
+	}
+
+	// Program validation (last step in the pipeline)
+	glValidateProgram(pShader);
+	returnCode = 0;
+	glGetProgramiv(pShader, GL_VALIDATE_STATUS, &returnCode); // Returns the validation status to our returnCode variable
+	if (!returnCode) {
+		GLchar log[1024] = { 0 }; // 1024 is the standard max log size. Set to empty string
+		glGetProgramInfoLog(pShader, sizeof(log), NULL, log); // Get error log
+		printf("Program validation error: '%s'\n", log);
 		return;
 	}
 }
@@ -117,7 +128,7 @@ int main() {
 	if (!glfwInit()) {
 		printf("GLFW was not initialized");
 		glfwTerminate(); // Remove all traces from memory
-		return 1;
+		return 1; 
 	}
 
 	// MAX MIN CONTEXT VERSIONS. Indicate to GLFW the min and max supported OpenGL Versions
