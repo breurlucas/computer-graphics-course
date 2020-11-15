@@ -13,11 +13,13 @@
 
 // By using the OpenGL types (like GLint) GLEW ensures we are using the most optimized implementations (memory allocation, for instance)
 const GLint WIDTH = 800, HEIGHT = 600;
+//const float toRad = 3.141592f / 180.0f; // Save the degree to radian conversion constant
 GLuint VAO, VBO, pShader; // Unsigned integer
 
-bool direction = true, sizeDirection = true; // True: translate right; False: translate left
-float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.01f; // Increment is related to local FPS if not limited
-float size = 0.4f, sizeMax = 0.8f, sizeMin = 0.1f, sizeIncrement = 0.01f;
+bool direction = true, sizeDirection = true, angleDirection = true; // True: translate right; False: translate left
+float triOffset = 0.0f, triOffsetMax = 0.7f, triIncrement = 0.005f; // Increment is related to local FPS if not limited
+float size = 0.4f, sizeMax = 0.8f, sizeMin = 0.1f, sizeIncrement = 0.005f;
+float angle = 0.0f, angleMax = 360.0, angleMin = 0.0f, angleIncrement = 0.8f;
 
 // Vertex shader. Version 3.3.0 of GLSL (OpenGL Shading Language)
 // Through the matrix model we can pass x, y and z movement all at once in a single variable
@@ -251,13 +253,25 @@ int main() {
 
 				if (size >= sizeMax || size <= sizeMin) // If predetermined max/min scaling was reached, change scaling direction
 					sizeDirection = !sizeDirection;
+
+				// Rotation rule
+				if (angleDirection)
+					angle += angleIncrement; // Rotate left
+				else
+					angle -= angleIncrement; // Rotate right
+
+				if (angle >= angleMax || angle <= angleMin) // If predetermined max/min angle was reached, change rotation direction
+					angleDirection = !angleDirection;
 				
 				GLint uniModel = glGetUniformLocation(pShader, "model"); // Searches for the 'model' variable in the pShader program
 				glm::mat4 model(1.0f); // glm::mat4 get the 'mat4' function inside the class 'glm'.
 									   // Fill the (4x4) model matrix with 1's
 
 				// Movement: model gets updated by the translate function
-				model = glm::translate(model, glm::vec3(triOffset, triOffset, 0.0f)); // glm::vec3 returns the specified vector in the correct format
+				model = glm::translate(model, glm::vec3(triOffset, 0.0f, 0.0f)); // glm::vec3 returns the specified vector in the correct format
+				
+				// Rotate: model gets updated by the rotation funtion
+				model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f)); // glm::vec3 returns the specified vector in the correct format
 
 				// Scale: model gets updated by the scaling function
 				model = glm::scale(model, glm::vec3(size, size, 1.0f)); // glm::vec3 returns the specified vector in the correct format
