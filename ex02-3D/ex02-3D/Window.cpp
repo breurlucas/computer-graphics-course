@@ -3,11 +3,29 @@
 Window::Window() {
 	width = 800;
 	height = 600;
+
+	// Initialize keyboard keys array
+	for (int i=0; i < 1024; i++) {
+		keys[i] = false;
+	}
+
+	xChange = 0.0f;
+	yChange = 0.0f;
+	mouseFirstMove = true;
 }
 
 Window::Window(GLint windowWidth, GLint windowHeight) {
 	width = windowHeight;
 	height = windowHeight;
+
+	// Initialize keyboard keys array
+	for (int i = 0; i < 1024; i++) {
+		keys[i] = false;
+	}
+
+	xChange = 0.0f;
+	yChange = 0.0f;
+	mouseFirstMove = true;
 }
 
 Window::~Window() {
@@ -56,6 +74,9 @@ int Window::Initialize() {
 	// Set/Activate the main window
 	glfwMakeContextCurrent(mainWindow);
 
+	// Set up callbacks for keyboard and mouse inputs
+	createCallbacks();
+
 	// GLEW EXPERIMENTAL. Allows GLEW to use experimental OpenGL extensions
 	glewExperimental = GL_TRUE;
 	// From this point on GLEW will automatically check for the best implementations available
@@ -72,8 +93,81 @@ int Window::Initialize() {
 
 	// Viewport configuration, passing framebuffer size in pixels
 	glViewport(0, 0, bufferWidth, bufferHeight);
+	/*
+	Sets pointer to the 'mainWindow' object in order for it to be accessible by the static methods for keyboard and
+	mouse handling; such as: 'handleKeys()'
+
+	The pointer is 'this', the current class
+	*/
+	glfwSetWindowUserPointer(mainWindow, this); 
 }
 
 void Window::swapBuffer() {
 	glfwSwapBuffers(mainWindow);
 }
+
+// Args are automatically filled in by the 'glfwSetKeyCallback()' function
+// Args: (window, key, code related to the key, action (press, release etc.), mode related to the action)
+void Window::handleKeys(GLFWwindow* window, int key, int code, int action, int mode) {
+	/*
+	Here we return the pointer to 'mainWindow' stored previously. Thus we are returning the class 'Window'.
+	The type returned is generic so a casting to <Window*> is necessary.
+	*/
+	Window* theWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+	// Close the window when 'esc' is pressed
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+		glfwSetWindowShouldClose(window, GL_TRUE);
+		return;
+	}
+
+	// Store key presses/releases in the keys array
+	if (key >= 0 && key <= 1024) { 	// Guarantees conformity to our UTF-8 array size
+		if (action == GLFW_PRESS) {
+			theWindow->keys[key] = true;
+			//printf("Pressed %d\n", key);
+		}
+		else if (action == GLFW_RELEASE) {
+			theWindow->keys[key] = false;
+			//printf("Released %d\n", key);
+		}
+	}
+}
+
+void Window::handleMouse(GLFWwindow* window, double xPos, double yPos) {
+	Window* theWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+	if (theWindow->mouseFirstMove) {
+		theWindow->xLast = xPos;
+		theWindow->yLast = yPos;
+		theWindow->mouseFirstMove = false;
+	}
+
+	theWindow->xChange = xPos - theWindow->xLast;
+	theWindow->yChange = theWindow->yLast - yPos;
+
+	theWindow->xLast = xPos;
+	theWindow->yLast = yPos;
+
+	//printf("x: %.2f y: %.2f\n", theWindow->xChange, theWindow->yChange);
+}
+
+
+void Window::createCallbacks() {
+	glfwSetKeyCallback(mainWindow, handleKeys);
+	glfwSetCursorPosCallback(mainWindow, handleMouse);
+}
+
+GLfloat Window::getXChange() {
+	GLfloat theChange = xChange;
+	xChange = 0; // Reset after read
+	return theChange;
+}
+
+GLfloat Window::getYChange() {
+	GLfloat theChange = yChange;
+	yChange = 0; // Reset after read
+	return theChange;
+}
+
+

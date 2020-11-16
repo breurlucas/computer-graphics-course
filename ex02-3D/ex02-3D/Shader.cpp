@@ -4,6 +4,7 @@ Shader::Shader() {
 	shaderID = 0;
 	uniformModel = 0;
 	uniformProjection = 0;
+	//uniformView = 0;
 }
 
 Shader::~Shader() {
@@ -13,6 +14,7 @@ Shader::~Shader() {
 	}
 	uniformModel = 0;
 	uniformProjection = 0;
+	//uniformView = 0;
 }
 
 void Shader::UseProgram() {
@@ -89,6 +91,7 @@ void Shader::CreateShader(const char* vertexCode, const char* fragmentCode) {
 	// Get the uniform variables in the compiled shaders and store them in memory
 	uniformProjection = glGetUniformLocation(shaderID, "projection"); // Searches for the 'projection' variable in the shader program
 	uniformModel = glGetUniformLocation(shaderID, "model"); // Searches for the 'model' variable in the shader program
+	uniformView = glGetUniformLocation(shaderID, "view"); // Searches for the 'view' variable in the shader program
 }
 
 void Shader::CompileShader(GLenum shaderType, const char* shaderCode) {

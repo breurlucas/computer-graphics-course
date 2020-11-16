@@ -11,10 +11,12 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Window.h"
+#include "Camera.h"
 
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
 Window mainWindow;
+Camera camera;
 
 static const char* vertexLocation = "Shaders/VertexShader.glsl";
 static const char* fragmentLocation = "Shaders/FragmentShader.glsl";
@@ -58,15 +60,21 @@ int main() {
 	CreateTriangle(); // Set the data in the GPU memory
 	AddShader(); // Create and compile the shaders through the shader class
 
-	// Args: (real depth, display/window aspect ratio, virtual near clip depth, virtual far clip depth)
+	// CAMERA
+	//Args: (startPosition, startWorldUp, startYaw, startPitch, startMoveSpeed, startTurnSpeed)
+	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 0.1f, 1.0f);
 
 	// Calculate the 3D PROJECTION
+	// Args: (real depth, display/window aspect ratio, virtual near clip depth, virtual far clip depth)
 	glm::mat4 projection = glm::perspective(1.0f, mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 100.0f);
 
 	// Run till window gets closed
 	while (!mainWindow.getWindowShouldClose()) {
 		// Activate inputs and events (mouse and keyboard input, for instance)
 		glfwPollEvents();
+
+		// Set up keyboard control
+		camera.keyControl(mainWindow.getKeys());
 
 		/********************************
 		*	Background Color
@@ -85,7 +93,8 @@ int main() {
 		// Updates the projection variable in the shader in order to multiply/transform our vertex matrix
 		// Args: (projection, number of projections, should be transposed?, projection values)
 		glUniformMatrix4fv(shaderList[0].getUniformProjection(), 1, GL_FALSE, glm::value_ptr(projection));
-			
+		glUniformMatrix4fv(shaderList[0].getUniformView(), 1, GL_FALSE, glm::value_ptr(camera.calculateViewMatrix()));
+
 			/********************************
 			*	Object 1
 			*********************************/

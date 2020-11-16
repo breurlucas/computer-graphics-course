@@ -18,9 +18,10 @@ public:
 	// Getters
 	GLuint getUniformProjection() { return uniformProjection; };
 	GLuint getUniformModel() { return uniformModel; };
+	GLuint getUniformView() { return uniformView; };
 
 private:
-	GLuint shaderID, uniformProjection, uniformModel;
+	GLuint shaderID, uniformProjection, uniformModel, uniformView;
 	void CreateShader(const char *vertexCode, const char *fragmentCode);
 	void CompileShader(GLenum shaderType, const char *shaderCode);
 	std::string ReadFile(const char* fileLocation);
