@@ -12,20 +12,37 @@ Camera::Camera(glm::vec3 startPosition, glm::vec3 startWorldUp, GLfloat startYaw
 	update();
 }
 
-void Camera::keyControl(bool* keys) {
+void Camera::keyControl(bool* keys, GLfloat deltaTime){
+	GLfloat velocity = deltaTime * moveSpeed;
+
 	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP]) {
-		position += front * moveSpeed;
+		position += front * velocity;
 	}
 	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN]) {
-		position -= front * moveSpeed;
+		position -= front * velocity;
 	}
 	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT]) {
-		position -= right * moveSpeed;
+		position -= right * velocity;
 	}
 	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) {
-		position += right * moveSpeed;
+		position += right * velocity;
 	}
 }
+
+void Camera::mouseControl(GLfloat xChange, GLfloat yChange, GLfloat deltaTime) {
+	GLfloat velocity = deltaTime * turnSpeed;
+
+	yaw += xChange * velocity;
+	pitch += yChange * velocity;
+
+	if (pitch > 90.0f)
+		pitch = 90.0f;
+	else if (pitch < -90.0f)
+		pitch = -90.0f;
+
+	update();
+}
+
 
 void Camera::update() {
 	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

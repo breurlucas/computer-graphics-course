@@ -18,6 +18,9 @@ std::vector<Shader> shaderList;
 Window mainWindow;
 Camera camera;
 
+// Old implementation of FPS control
+GLfloat deltaTime = 0.0f, lastTime = 0.0f;
+
 static const char* vertexLocation = "Shaders/VertexShader.glsl";
 static const char* fragmentLocation = "Shaders/FragmentShader.glsl";
 
@@ -62,7 +65,7 @@ int main() {
 
 	// CAMERA
 	//Args: (startPosition, startWorldUp, startYaw, startPitch, startMoveSpeed, startTurnSpeed)
-	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 0.1f, 1.0f);
+	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 8.0f);
 
 	// Calculate the 3D PROJECTION
 	// Args: (real depth, display/window aspect ratio, virtual near clip depth, virtual far clip depth)
@@ -70,11 +73,17 @@ int main() {
 
 	// Run till window gets closed
 	while (!mainWindow.getWindowShouldClose()) {
+		// Old implementation of FPS control
+		GLfloat now = glfwGetTime();
+		deltaTime = now - lastTime;
+		lastTime = now;
+
 		// Activate inputs and events (mouse and keyboard input, for instance)
 		glfwPollEvents();
 
-		// Set up keyboard control
-		camera.keyControl(mainWindow.getKeys());
+		// Set up keyboard and mouse control
+		camera.keyControl(mainWindow.getKeys(), deltaTime);
+		camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange(), deltaTime);
 
 		/********************************
 		*	Background Color
