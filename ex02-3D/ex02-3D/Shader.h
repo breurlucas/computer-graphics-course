@@ -19,15 +19,19 @@ public:
 	GLuint getUniformProjection() { return uniformProjection; };
 	GLuint getUniformModel() { return uniformModel; };
 	GLuint getUniformView() { return uniformView; };
+	GLuint getUniformEyePosition() { return uniformEyePosition; };
 	GLuint getUniformAmbientIntensity() { return uniformAmbientIntensity; };
 	GLuint getUniformAmbientColor() { return uniformAmbientColor; };
 	GLuint getUniformDiffuseIntensity() { return uniformDiffuseIntensity; };
 	GLuint getUniformDirection() { return uniformDirection; };
+	GLuint getUniformSpecularIntensity() { return uniformSpecularIntensity; };
+	GLuint getUniformShininess() { return uniformShininess; };
 
 private:
-	GLuint shaderID, uniformProjection, uniformModel, uniformView,
+	GLuint shaderID, uniformProjection, uniformModel, uniformView, uniformEyePosition,
 		uniformAmbientIntensity, uniformAmbientColor,
-		uniformDiffuseIntensity, uniformDirection;
+		uniformDiffuseIntensity, uniformDirection,
+		uniformSpecularIntensity, uniformShininess;
 	void CreateShader(const char *vertexCode, const char *fragmentCode);
 	void CompileShader(GLenum shaderType, const char *shaderCode);
 	std::string ReadFile(const char* fileLocation);

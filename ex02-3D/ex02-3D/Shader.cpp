@@ -98,6 +98,10 @@ void Shader::CreateShader(const char* vertexCode, const char* fragmentCode) {
 	// Diffuse Light
 	uniformDirection = glGetUniformLocation(shaderID, "directionalLight.direction");
 	uniformDiffuseIntensity = glGetUniformLocation(shaderID, "directionalLight.diffuseIntensity");
+	// Specular Light
+	uniformSpecularIntensity = glGetUniformLocation(shaderID, "material.specularIntensity");
+	uniformShininess = glGetUniformLocation(shaderID, "material.shininess");
+
 }
 
 void Shader::CompileShader(GLenum shaderType, const char* shaderCode) {
