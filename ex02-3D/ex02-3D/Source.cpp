@@ -1,3 +1,5 @@
+#define STB_IMAGE_IMPLEMENTATION
+
 #include <stdio.h>
 #include <vector>
 
@@ -12,11 +14,15 @@
 #include "Shader.h"
 #include "Window.h"
 #include "Camera.h"
+#include "Texture.h"
 
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
 Window mainWindow;
 Camera camera;
+
+Texture brickTexture;
+Texture dirtTexture;
 
 // Old implementation of FPS control
 GLfloat deltaTime = 0.0f, lastTime = 0.0f;
@@ -25,12 +31,12 @@ static const char* vertexLocation = "Shaders/VertexShader.glsl";
 static const char* fragmentLocation = "Shaders/FragmentShader.glsl";
 
 // Function for creating a triangle (VAO and VBO)
-void CreateTriangle() {
+void CreateObject() {
 	GLfloat vertices[] = {
-		 0.0f,  1.0f, 0.0f, // Vertex 0 (x, y, z)
-		 1.0f, -1.0f, 0.0f, // Vertex 1 (x, y, z)
-		-1.0f, -1.0f, 0.0f, // Vertex 2 (x, y, z)
-		 0.0f, -1.0f, 1.0f  // Vertex 3 (x, y, z)
+		 0.0f,  1.0f, 0.0f, 0.5f, 1.0f, // Vertex 0 (x, y, z, u, v)
+		 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // Vertex 1 (x, y, z, u, v)
+		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // Vertex 2 (x, y, z, u, v)
+		 0.0f, -1.0f, 1.0f, 0.5f, 0.0f  // Vertex 3 (x, y, z, u, v)
 	};
 
 	unsigned int indices[]{
@@ -60,12 +66,18 @@ int main() {
 	mainWindow.Initialize();
 
 	// Create the objects
-	CreateTriangle(); // Set the data in the GPU memory
+	CreateObject(); // Set the data in the GPU memory
 	AddShader(); // Create and compile the shaders through the shader class
 
 	// CAMERA
 	//Args: (startPosition, startWorldUp, startYaw, startPitch, startMoveSpeed, startTurnSpeed)
 	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 8.0f);
+
+	// TEXTURES
+	brickTexture = Texture((char*)"Textures/brick.png");
+	brickTexture.loadTexture();
+	dirtTexture = Texture((char*)"Textures/dirt.png");
+	dirtTexture.loadTexture();
 
 	// Calculate the 3D PROJECTION
 	// Args: (real depth, display/window aspect ratio, virtual near clip depth, virtual far clip depth)
@@ -113,6 +125,7 @@ int main() {
 			//model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
 			// Args: (shader model, number of matrices, should be transposed?, offset model values)
 			glUniformMatrix4fv(shaderList[0].getUniformModel(), 1, GL_FALSE, glm::value_ptr(model)); // Assigns the new offset model to the shader uniModel
+			brickTexture.useTexture(); // Uses the active texture in the buffer
 			// Render object
 			meshList[0]->RenderMesh(); 
 
@@ -123,6 +136,7 @@ int main() {
 			model = glm::translate(model, glm::vec3(0.0f, 0.75f, -2.5f));
 			model = glm::scale(model, glm::vec3(0.4f, 0.4f, 0.4f));
 			glUniformMatrix4fv(shaderList[0].getUniformModel(), 1, GL_FALSE, glm::value_ptr(model));
+			dirtTexture.useTexture(); // Uses the active texture in the buffer
 			// Render object
 			meshList[1]->RenderMesh();
 

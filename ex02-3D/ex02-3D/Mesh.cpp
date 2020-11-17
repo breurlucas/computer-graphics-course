@@ -32,8 +32,11 @@ void Mesh::CreateMesh(GLfloat* vertices, unsigned int* indices, unsigned int num
 				// Attribute Pointer
 				/* Args: (shader location, number of vertex in the primitive, type, is it all in one line? (normalized), do I need to skip something?,
 				offset from the start?) */
-				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 5, 0); // 'sizeof(vertices[0]) * 5' skips to the next line after reading 3 elements
+				// The shader location is now set to 1 instead of 0
+				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 5, (void*) (sizeof(vertices[0]) * 3)); // '(void*) (sizeof(vertices[0]) * 3))' skips 3 elements when reading a line
 				glEnableVertexAttribArray(0); // Arg: (shader location)
+				glEnableVertexAttribArray(1); // Arg: (shader location)
 
 			glBindBuffer(GL_ARRAY_BUFFER, 0); // Reset VBO pointer for the next object to be processed
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Reset IBO pointer for the next object to be processed
