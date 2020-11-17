@@ -15,7 +15,7 @@ Window::Window() {
 }
 
 Window::Window(GLint windowWidth, GLint windowHeight) {
-	width = windowHeight;
+	width = windowWidth;
 	height = windowHeight;
 
 	// Initialize keyboard keys array
@@ -76,6 +76,9 @@ int Window::Initialize() {
 
 	// Set up callbacks for keyboard and mouse inputs
 	createCallbacks();
+
+	// Disable the cursor
+	glfwSetInputMode(mainWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// GLEW EXPERIMENTAL. Allows GLEW to use experimental OpenGL extensions
 	glewExperimental = GL_TRUE;

@@ -80,6 +80,18 @@ void CreateObject() {
 		1, 2, 3  // Pyramid base
 	};
 
+	GLfloat floorVertices[] = {
+		-10.0, 0.0f, -10.0f,  0.0f,  0.0f, 0.0f, -1.0f, 0.0f,
+		-10.0, 0.0f, -10.0f, 10.0f,  0.0f, 0.0f, -1.0f, 0.0f,
+		-10.0, 0.0f, -10.0f,  0.0f, 10.0f, 0.0f, -1.0f, 0.0f,
+		-10.0, 0.0f, -10.0f, 10.0f, 10.0f, 0.0f, -1.0f, 0.0f
+	};
+
+	unsigned int floorIndices[] = {
+		0, 2, 1,
+		1, 2, 3
+	};
+
 	// Calculate the normals
 	calcAverageNormal(indices, 12, vertices, 32, 8, 5);
 
@@ -90,6 +102,10 @@ void CreateObject() {
 	Mesh* obj2 = new Mesh();
 	obj2->CreateMesh(vertices, indices, 32, 12);
 	meshList.push_back(obj2);
+
+	Mesh* obj3 = new Mesh();
+	obj3->CreateMesh(floorVertices, floorIndices, 32, 6);
+	meshList.push_back(obj3);
 }
 
 void AddShader() {
@@ -99,7 +115,7 @@ void AddShader() {
 }
 
 int main() {
-	mainWindow = Window(1366, 768);
+	mainWindow = Window(1280, 720);
 	mainWindow.Initialize();
 
 	// Create the objects
@@ -188,10 +204,21 @@ int main() {
 			model = glm::translate(model, glm::vec3(0.0f, 4.0f, -2.5f));
 			//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 0.4f));
 			glUniformMatrix4fv(shaderList[0].getUniformModel(), 1, GL_FALSE, glm::value_ptr(model));
-			dirtTexture.useTexture(); // Uses the active texture in the buffer
+			brickTexture.useTexture(); // Uses the active texture in the buffer
 			woodMaterial.useMaterial(shaderList[0].getUniformSpecularIntensity(), shaderList[0].getUniformShininess());
 			// Render object 
 			meshList[1]->RenderMesh();
+
+			/********************************
+			*	Object 3 FLOOR
+			*********************************/
+			model = glm::mat4(1.0f); // Creates a 4x4 matrix with 1.0f in every entry
+			model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+			glUniformMatrix4fv(shaderList[0].getUniformModel(), 1, GL_FALSE, glm::value_ptr(model));
+			dirtTexture.useTexture(); // Uses the active texture in the buffer
+			metalMaterial.useMaterial(shaderList[0].getUniformSpecularIntensity(), shaderList[0].getUniformShininess());
+			// Render object 
+			meshList[2]->RenderMesh();
 
 		glUseProgram(0); // Reset program pointer for the next program to be executed
 
