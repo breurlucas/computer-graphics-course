@@ -10,19 +10,23 @@
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtc\type_ptr.hpp>
 
+#include "CommonValues.h"
 #include "Mesh.h"
 #include "Shader.h"
 #include "Window.h"
 #include "Camera.h"
 #include "Texture.h"
-#include "Light.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
 #include "Material.h"
 
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
 Window mainWindow;
 Camera camera;
-Light mainLight;
+
+DirectionalLight mainLight;
+PointLight pointLights[MAX_POINT_LIGHTS];
 
 Material metalMaterial;
 Material woodMaterial;
@@ -37,7 +41,7 @@ static const char* vertexLocation = "Shaders/VertexShader.glsl";
 static const char* fragmentLocation = "Shaders/FragmentShader.glsl";
 
 // Normal calculations (source: OpenGL)
-void calcAverageNormal(unsigned int* indices, unsigned int indexCount, GLfloat* vertices, unsigned int vertexCount,
+void CalcAverageNormal(unsigned int* indices, unsigned int indexCount, GLfloat* vertices, unsigned int vertexCount,
 					unsigned int vLength, unsigned int normalOffset) {
 	for (int i=0; i < indexCount; i=i+3) {
 		unsigned int i0 = indices[i] * vLength;
@@ -82,9 +86,9 @@ void CreateObject() {
 
 	GLfloat floorVertices[] = {
 		-10.0, 0.0f, -10.0f,  0.0f,  0.0f, 0.0f, -1.0f, 0.0f,
-		-10.0, 0.0f, -10.0f, 10.0f,  0.0f, 0.0f, -1.0f, 0.0f,
-		-10.0, 0.0f, -10.0f,  0.0f, 10.0f, 0.0f, -1.0f, 0.0f,
-		-10.0, 0.0f, -10.0f, 10.0f, 10.0f, 0.0f, -1.0f, 0.0f
+		 10.0, 0.0f, -10.0f, 10.0f,  0.0f, 0.0f, -1.0f, 0.0f,
+		-10.0, 0.0f,  10.0f,  0.0f, 10.0f, 0.0f, -1.0f, 0.0f,
+		 10.0, 0.0f,  10.0f, 10.0f, 10.0f, 0.0f, -1.0f, 0.0f
 	};
 
 	unsigned int floorIndices[] = {
@@ -93,7 +97,7 @@ void CreateObject() {
 	};
 
 	// Calculate the normals
-	calcAverageNormal(indices, 12, vertices, 32, 8, 5);
+	CalcAverageNormal(indices, 12, vertices, 32, 8, 5);
 
 	Mesh* obj1 = new Mesh();
 	obj1->CreateMesh(vertices, indices, 32, 12);
@@ -124,15 +128,29 @@ int main() {
 
 	// CAMERA
 	//Args: (startPosition, startWorldUp, startYaw, startPitch, startMoveSpeed, startTurnSpeed)
-	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -60.0f, 0.0f, 5.0f, 32.0f);
+	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -60.0f, 0.0f, 5.0f, 8.0f);
 
 	// MATERIAL
 	metalMaterial = Material(1.0f, 32.0f);
 	woodMaterial = Material(0.3f, 4.0f);
 
 	// LIGHT
-	mainLight = Light(1.0f, 1.0f, 1.0f, 0.4f,
-					-8.0f, 8.0f, -1.0f, 0.3f);
+	mainLight = DirectionalLight(1.0f, 1.0f, 1.0f,		// RGB
+								 0.4f, 0.3f,			// ambient | diffuse intensities
+					            -8.0f, 8.0f, -1.0f);	// x, y, z
+
+	//unsigned int pointLightsCount = 0;
+	//pointLights[0] = PointLight(0.0f, 1.0f, 1.0f,		// RGB
+	//						    0.3f, 1.0f,				// ambient | diffuse intensities
+	//						   -2.0f, 1.0f, -2.0f,		// x, y, z)
+	//						    0.3f, 0.2f, 0.1f);		// constant, linear, exponent
+	//pointLightsCount++;
+
+	//pointLights[1] = PointLight(1.0f, 0.0f, 0.0f,		// RGB
+	//						    0.3f, 1.0f,				// ambient | diffuse intensities
+	//						    2.0f, 1.0f, -2.0f,		// x, y, z)
+	//							0.3f, 0.2f, 0.1f);		// constant, linear, exponent
+	//pointLightsCount++;
 
 	// TEXTURES
 	brickTexture = Texture((char*)"Textures/brick.png");
@@ -179,9 +197,9 @@ int main() {
 			
 			/********************************
 			*	Lights
-			*********************************/
-			mainLight.useLight(shaderList[0].getUniformAmbientIntensity(), shaderList[0].getUniformAmbientColor(),
-							shaderList[0].getUniformDiffuseIntensity(), shaderList[0].getUniformDirection());
+			*********************************/	
+			shaderList[0].setDirectionalLight(&mainLight);
+			//shaderList[0].setPointLight(pointLights, pointLightsCount);
 
 			/********************************
 			*	Object 1

@@ -6,6 +6,10 @@
 #include <iostream>
 #include <fstream>
 
+#include "CommonValues.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+
 class Shader
 {
 public:
@@ -15,23 +19,40 @@ public:
 	void CreateFromFile(const char* vertexLocation, const char* fragmentLocation);
 	void UseProgram();
 
+	void setDirectionalLight(DirectionalLight* dLight);
+	void setPointLight(PointLight* pLight, unsigned int lightsCount);
+
 	// Getters
 	GLuint getUniformProjection() { return uniformProjection; };
 	GLuint getUniformModel() { return uniformModel; };
 	GLuint getUniformView() { return uniformView; };
 	GLuint getUniformEyePosition() { return uniformEyePosition; };
-	GLuint getUniformAmbientIntensity() { return uniformAmbientIntensity; };
-	GLuint getUniformAmbientColor() { return uniformAmbientColor; };
-	GLuint getUniformDiffuseIntensity() { return uniformDiffuseIntensity; };
-	GLuint getUniformDirection() { return uniformDirection; };
 	GLuint getUniformSpecularIntensity() { return uniformSpecularIntensity; };
 	GLuint getUniformShininess() { return uniformShininess; };
 
 private:
 	GLuint shaderID, uniformProjection, uniformModel, uniformView, uniformEyePosition,
-		uniformAmbientIntensity, uniformAmbientColor,
-		uniformDiffuseIntensity, uniformDirection,
 		uniformSpecularIntensity, uniformShininess;
+
+	struct
+	{
+		GLuint uniformAmbientIntensity;
+		GLuint uniformAmbientColor;
+		GLuint uniformDiffuseIntensity;
+		GLuint uniformDirection;
+	} uniformDirectionalLight;
+
+	GLuint uniformPointLightsCount;
+	struct {
+		GLuint uniformAmbientIntensity;
+		GLuint uniformAmbientColor;
+		GLuint uniformDiffuseIntensity;
+		GLuint uniformPosition;
+		GLuint uniformConstant;
+		GLuint uniformLinear;
+		GLuint uniformExponent;
+	} uniformPointLights[MAX_POINT_LIGHTS]; // We can have more than one point light in a scene
+
 	void CreateShader(const char *vertexCode, const char *fragmentCode);
 	void CompileShader(GLenum shaderType, const char *shaderCode);
 	std::string ReadFile(const char* fileLocation);
