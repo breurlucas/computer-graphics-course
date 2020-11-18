@@ -18,6 +18,7 @@
 #include "Texture.h"
 #include "DirectionalLight.h"
 #include "PointLight.h"
+#include "SpotLight.h"
 #include "Material.h"
 
 std::vector<Mesh*> meshList;
@@ -27,6 +28,7 @@ Camera camera;
 
 DirectionalLight mainLight;
 PointLight pointLights[MAX_POINT_LIGHTS];
+SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 Material metalMaterial;
 Material woodMaterial;
@@ -134,23 +136,33 @@ int main() {
 	metalMaterial = Material(1.0f, 32.0f);
 	woodMaterial = Material(0.3f, 4.0f);
 
-	// LIGHT
+	// DIRECTIONAL LIGHT
 	mainLight = DirectionalLight(1.0f, 1.0f, 1.0f,		// RGB
-								 0.4f, 0.5f,			// ambient | diffuse intensities
-					            -8.0f, 8.0f, -1.0f);	// x, y, z
+								 0.3f, 0.4f,			// ambient | diffuse intensities
+					            -8.0f, -8.0f, -2.0f);	// x, y, z
 
+	// POINT LIGHTS
 	unsigned int pointLightsCount = 0;
 	pointLights[0] = PointLight(0.0f, 1.0f, 1.0f,		// RGB
 							    0.3f, 1.0f,				// ambient | diffuse intensities
-							   -2.0f, 1.0f, -2.0f,		// x, y, z)
-							    0.3f, 0.2f, 0.05f);		// constant, linear, exponent
+							   -2.0f, 1.0f, -2.0f,		// Position (x, y, z)
+							    0.3f, 0.2f, 0.1);		// constant, linear, exponent
 	pointLightsCount++;
 
 	pointLights[1] = PointLight(0.0f, 0.0f, 1.0f,		// RGB
 							    0.3f, 1.0f,				// ambient | diffuse intensities
-							    2.0f, 1.0f, -2.0f,		// x, y, z)
-								0.3f, 0.2f, 0.05f);		// constant, linear, exponent
+							    2.0f, 1.0f, -2.0f,		// Position (x, y, z)
+								0.3f, 0.2f, 0.1f);		// constant, linear, exponent
 	pointLightsCount++;
+
+	// SPOT LIGHTS
+	unsigned int spotLightsCount = 0;
+	spotLights[0] = SpotLight(1.0f, 1.0f, 1.0f,				// RGB
+						      0.5f, 0.5f,					// ambient | diffuse intensities
+						      0.0f, 1.0f, 5.0f,				// Position (x, y, z)
+					          0.0f, -1.0f, 0.0f,			// Direction (x, y, z)
+						      0.3f, 0.2f, 0.1f, 20.0f);		// constant, linear, exponent, edge
+	spotLightsCount++;
 
 	// TEXTURES
 	brickTexture = Texture((char*)"Textures/brick.png");
@@ -180,7 +192,7 @@ int main() {
 		*	Background Color
 		*********************************/
 		// Clear window and select a new color
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		// Load the selected color in the GPU memory buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // With the pipe operator both parameters are passed
 
@@ -199,7 +211,10 @@ int main() {
 			*	Lights
 			*********************************/	
 			shaderList[0].setDirectionalLight(&mainLight);
-			shaderList[0].setPointLight(pointLights, pointLightsCount);
+			//shaderList[0].setPointLight(pointLights, pointLightsCount);
+			// Update flashlight position
+			spotLights[0].SetFlash(camera.getCameraPosition(), camera.getCameraDirection());
+			shaderList[0].setSpotLight(spotLights, spotLightsCount);
 
 			/********************************
 			*	Object 1

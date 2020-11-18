@@ -10,10 +10,10 @@ public:
 		GLfloat xPos, GLfloat yPos, GLfloat zPos,
 		GLfloat con, GLfloat lin, GLfloat exp);
 	~PointLight();
-	void useLight(GLuint ambientIntensityLocation, GLuint ambientColorLocation,
+	void UseLight(GLuint ambientIntensityLocation, GLuint ambientColorLocation,
 		GLuint diffuseIntensityLocation, GLuint positionLocation,
 		GLuint constantLocation, GLuint linearLocation, GLuint exponentLocation);
-private:
+protected:
 	glm::vec3 position;
 	GLfloat constant, linear, exponent; // L/(ax^2 + bx + c) a: exponent, b: linear, c: constant
 };

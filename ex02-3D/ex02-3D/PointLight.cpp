@@ -19,7 +19,7 @@ PointLight::PointLight(GLfloat red, GLfloat green, GLfloat blue,
 
 PointLight::~PointLight() {}
 
-void PointLight::useLight(GLuint ambientIntensityLocation, GLuint ambientColorLocation,
+void PointLight::UseLight(GLuint ambientIntensityLocation, GLuint ambientColorLocation,
 	GLuint diffuseIntensityLocation, GLuint positionLocation,
 	GLuint constantLocation, GLuint linearLocation, GLuint exponentLocation) {
 
