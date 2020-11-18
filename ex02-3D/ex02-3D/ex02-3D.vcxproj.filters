@@ -97,10 +97,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Textures\brick.png">
+    <Image Include="Textures\dirt.png">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Textures\dirt.png">
+    <Image Include="Textures\brick.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

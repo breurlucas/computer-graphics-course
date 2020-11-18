@@ -136,21 +136,21 @@ int main() {
 
 	// LIGHT
 	mainLight = DirectionalLight(1.0f, 1.0f, 1.0f,		// RGB
-								 0.4f, 0.3f,			// ambient | diffuse intensities
+								 0.4f, 0.5f,			// ambient | diffuse intensities
 					            -8.0f, 8.0f, -1.0f);	// x, y, z
 
-	//unsigned int pointLightsCount = 0;
-	//pointLights[0] = PointLight(0.0f, 1.0f, 1.0f,		// RGB
-	//						    0.3f, 1.0f,				// ambient | diffuse intensities
-	//						   -2.0f, 1.0f, -2.0f,		// x, y, z)
-	//						    0.3f, 0.2f, 0.1f);		// constant, linear, exponent
-	//pointLightsCount++;
+	unsigned int pointLightsCount = 0;
+	pointLights[0] = PointLight(0.0f, 1.0f, 1.0f,		// RGB
+							    0.3f, 1.0f,				// ambient | diffuse intensities
+							   -2.0f, 1.0f, -2.0f,		// x, y, z)
+							    0.3f, 0.2f, 0.05f);		// constant, linear, exponent
+	pointLightsCount++;
 
-	//pointLights[1] = PointLight(1.0f, 0.0f, 0.0f,		// RGB
-	//						    0.3f, 1.0f,				// ambient | diffuse intensities
-	//						    2.0f, 1.0f, -2.0f,		// x, y, z)
-	//							0.3f, 0.2f, 0.1f);		// constant, linear, exponent
-	//pointLightsCount++;
+	pointLights[1] = PointLight(0.0f, 0.0f, 1.0f,		// RGB
+							    0.3f, 1.0f,				// ambient | diffuse intensities
+							    2.0f, 1.0f, -2.0f,		// x, y, z)
+								0.3f, 0.2f, 0.05f);		// constant, linear, exponent
+	pointLightsCount++;
 
 	// TEXTURES
 	brickTexture = Texture((char*)"Textures/brick.png");
@@ -199,7 +199,7 @@ int main() {
 			*	Lights
 			*********************************/	
 			shaderList[0].setDirectionalLight(&mainLight);
-			//shaderList[0].setPointLight(pointLights, pointLightsCount);
+			shaderList[0].setPointLight(pointLights, pointLightsCount);
 
 			/********************************
 			*	Object 1
@@ -223,7 +223,7 @@ int main() {
 			//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 0.4f));
 			glUniformMatrix4fv(shaderList[0].getUniformModel(), 1, GL_FALSE, glm::value_ptr(model));
 			brickTexture.useTexture(); // Uses the active texture in the buffer
-			woodMaterial.useMaterial(shaderList[0].getUniformSpecularIntensity(), shaderList[0].getUniformShininess());
+			metalMaterial.useMaterial(shaderList[0].getUniformSpecularIntensity(), shaderList[0].getUniformShininess());
 			// Render object 
 			meshList[1]->RenderMesh();
 
@@ -234,7 +234,7 @@ int main() {
 			model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
 			glUniformMatrix4fv(shaderList[0].getUniformModel(), 1, GL_FALSE, glm::value_ptr(model));
 			dirtTexture.useTexture(); // Uses the active texture in the buffer
-			metalMaterial.useMaterial(shaderList[0].getUniformSpecularIntensity(), shaderList[0].getUniformShininess());
+			woodMaterial.useMaterial(shaderList[0].getUniformSpecularIntensity(), shaderList[0].getUniformShininess());
 			// Render object 
 			meshList[2]->RenderMesh();
 
